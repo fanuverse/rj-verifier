@@ -30,11 +30,15 @@ def _render_template(html: str, first_name: str, last_name: str, school_name: st
         else:
             logo_filename = "SHS.png"
         
-        assets_dir = Path(__file__).parent.parent / "assets"
+        try:
+             from . import config
+        except ImportError:
+             import config
+             
+        assets_dir = config.get_assets_dir()
         possible_paths = [
             assets_dir / logo_filename,
-            Path(__file__).parent.parent / logo_filename,
-            Path(__file__).parent.parent / "aassetlogo.png"
+            assets_dir / "aassetlogo.png"
         ]
         
         final_logo_path = None
@@ -121,13 +125,16 @@ def generate_teacher_pdf(first_name: str, last_name: str, school_name: str = "Sp
     except ImportError as exc:
         raise RuntimeError("Playwright required for PDF generation") from exc
         
-    templates_dir = Path(__file__).parent / "templates"
+    try:
+        from . import config
+    except ImportError:
+        import config
+    templates_dir = config.get_templates_dir()
     if not templates_dir.exists():
         templates_dir.mkdir(parents=True, exist_ok=True)
         
     template_file = _get_template_file_by_style(templates_dir, style)
     if not template_file.exists():
-        # Fallback if specific style missing
         template_file = templates_dir / "template_modern.html"
         
     html_content = template_file.read_text(encoding="utf-8")
@@ -151,7 +158,11 @@ def generate_teacher_png(first_name: str, last_name: str, school_name: str = "Sp
     except ImportError as exc:
         raise RuntimeError("Playwright required") from exc
         
-    templates_dir = Path(__file__).parent / "templates"
+    try:
+        from . import config
+    except ImportError:
+        import config
+    templates_dir = config.get_templates_dir()
     template_file = _get_template_file_by_style(templates_dir, style)
     if not template_file.exists():
          template_file = templates_dir / "template_modern.html"

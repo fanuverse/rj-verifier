@@ -17,18 +17,16 @@ function App() {
     const [result, setResult] = useState(null);
     const logEndRef = useRef(null);
 
-    const [activeTab, setActiveTab] = useState('verify'); // 'verify' | 'generate'
+    const [activeTab, setActiveTab] = useState('verify');
     const [genResult, setGenResult] = useState(null);
 
-    const [config, setConfig] = useState(null); // { socialLockDone: bool, usageCount: int }
+    const [config, setConfig] = useState(null);
     const [showSocialLock, setShowSocialLock] = useState(false);
     const [showDonation, setShowDonation] = useState(false);
 
-    // Animation States
     const [isSocialClosing, setIsSocialClosing] = useState(false);
     const [isDonationClosing, setIsDonationClosing] = useState(false);
 
-    // Helpers to close with animation
     const closeSocialLock = () => {
         setIsSocialClosing(true);
         setTimeout(() => {
@@ -45,7 +43,6 @@ function App() {
         }, 300);
     };
 
-    // Social Lock State
     const [socialClicks, setSocialClicks] = useState({
         yt: false,
         fb: false,
@@ -55,7 +52,6 @@ function App() {
 
     useEffect(() => {
         if (window.api) {
-            // Load Config
             window.api.getConfig().then(cfg => {
                 setConfig(cfg);
                 if (!cfg.socialLockDone) {
@@ -65,7 +61,6 @@ function App() {
 
             window.api.getSchools().then((data) => {
                 if (Array.isArray(data)) {
-                    // Add Default Option
                     const schoolsWithDefault = [
                         { id: '', name: 'Default (Random Rotation)' },
                         ...data
@@ -82,7 +77,6 @@ function App() {
     }, [activeTab]);
 
     const shortenSchoolName = (name) => {
-        // "Springfield High School (Springfield, OR)" -> "Springfield HS (OR)"
         return name.replace("Springfield High School", "Springfield HS")
             .replace("(Springfield, ", "(");
     };
@@ -90,25 +84,18 @@ function App() {
     const processLog = (msg) => {
         let pMsg = msg.trim();
 
-        // Fix Unicode/Encoding garbage like \u2717
         try {
             pMsg = JSON.parse(`"${pMsg}"`);
         } catch (e) {
-            // ignore if not valid json string
         }
-
-        // Remove common Python logger prefixes
         pMsg = pMsg.replace(/^\[INFO\]\s*/, "")
             .replace(/^\[ERROR\]\s*/, "")
             .replace(/^\[WARNING\]\s*/, "");
 
-        // Clean JSON Error Objects
         if (pMsg.includes("Failed (Status") && pMsg.includes("{")) {
-            // Extract the simple systemErrorMessage if possible
             try {
-                // Find start of JSON object
                 const jsonStart = pMsg.indexOf("{");
-                const jsonStr = pMsg.substring(jsonStart).replace(/'/g, '"').replace(/None/g, 'null'); // simplistic python-to-json fix
+                const jsonStr = pMsg.substring(jsonStart).replace(/'/g, '"').replace(/None/g, 'null');
                 const errObj = JSON.parse(jsonStr);
 
                 if (errObj.systemErrorMessage) {
@@ -119,23 +106,18 @@ function App() {
                     pMsg = `Error: ${pMsg.substring(0, 50)}...`;
                 }
             } catch (e) {
-                // formatting fallback
                 pMsg = `${pMsg.split("{")[0]}`;
             }
         }
 
-        // Icons for X mark
         pMsg = pMsg.replace("✗", "❌").replace("\\u2717", "");
 
-        // 3. Filter specific internal noise
-        if (pMsg.startsWith('[{"id":')) return; // Ignore getSchools raw JSON
+        if (pMsg.startsWith('[{"id":')) return;
         if (pMsg.includes("HTTP Request")) return;
         if (pMsg.includes("Auto-extracted")) return;
-        // Suppress raw success JSON if we already showed the "Generated PDF" info
         if (pMsg.includes('"success": true') && pMsg.includes('"files":')) return;
         if (!pMsg) return;
 
-        // 4. Iconify & Format
         if (pMsg.startsWith("Teacher Info:")) pMsg = `Name: ${pMsg.replace("Teacher Info:", "").trim()}`;
         else if (pMsg.startsWith("Email:")) pMsg = `Email: ${pMsg.replace("Email:", "").trim()}`;
         else if (pMsg.startsWith("School:")) pMsg = `School: ${pMsg.replace("School:", "").trim()}`;
@@ -143,20 +125,16 @@ function App() {
         else if (pMsg.startsWith("Verification ID:")) pMsg = `ID: ${pMsg.replace("Verification ID:", "").trim()}`;
         else if (pMsg.startsWith("Backup:")) pMsg = `Saved: ${pMsg.replace("Backup:", "").trim()}`;
 
-        // Steps
         else if (pMsg.includes("Step 1/4")) pMsg = "Generating PDF...";
         else if (pMsg.includes("Step 2/4")) pMsg = "Submitting Info...";
         else if (pMsg.includes("Step 3/4")) pMsg = "Skipping SSO...";
         else if (pMsg.includes("Step 4/4")) pMsg = "4Uploading Doc...";
         else if (pMsg.startsWith("Complete:")) pMsg = `${pMsg}`;
 
-        // Generic OK
         else if (pMsg.includes("[OK]")) pMsg = `${pMsg.replace("[OK]", "").trim()}`;
 
-        // Skip duplicate "Starting..." logs if restart happens
         else if (pMsg.includes("Starting verification for")) return;
 
-        // 5. Dedup
         setLogs(prev => {
             const lastLog = prev[prev.length - 1];
             if (lastLog) {
@@ -186,10 +164,9 @@ function App() {
         if (!config) return;
         const newCount = (config.usageCount || 0) + 1;
         const newConfig = { ...config, usageCount: newCount };
-        setConfig(newConfig); // Optimistic update
+        setConfig(newConfig);
         await window.api.setConfig(newConfig);
 
-        // Show Donation every 5th time
         if (newCount > 0 && newCount % 5 === 0) {
             setShowDonation(true);
         }
@@ -219,7 +196,7 @@ function App() {
 
         try {
             const res = await window.api.startVerify(formData);
-            await incrementUsage(); // Track usage
+            await incrementUsage();
             setResult(res);
             if (res.success) {
                 processLog("SUCCESS! Verif Pending.");
@@ -238,7 +215,7 @@ function App() {
         setGenResult("Generating...");
         try {
             const res = await window.api.generateDocs(formData);
-            await incrementUsage(); // Track usage
+            await incrementUsage();
             if (res.success) {
                 setGenResult(`Saved ${res.files.length} files`);
             } else {
@@ -253,8 +230,6 @@ function App() {
 
     return (
         <div className="app-container">
-
-            {/* <div className="brand">RJ Verifier <span className="pro-badge">LITE</span></div> */}
 
             <div className="tab-container" style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '15px', height: '25px' }}>
                 <button
@@ -354,9 +329,6 @@ function App() {
                         />
                     ) : (
                         <div style={{ display: 'flex', gap: '5px' }}>
-                            {/* In Generate mode, School is text input above. Here we use this slot for Logo? Or just empty */}
-                            {/* Actually user said "school yang awalnya dropdown ganti input" -> I did that above. */}
-                            {/* Let's put Logo Input here for Generator */}
                             <div style={{ flex: 1, position: 'relative' }}>
                                 <input type="text" readOnly placeholder="empty for default logo" value={formData.logoPath ? '...' + formData.logoPath.slice(-15) : ''} style={{ width: '100%', paddingRight: '25px' }} />
                                 <button onClick={handleBrowseLogo} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, background: '#444', border: 'none', color: 'white', cursor: 'pointer', padding: '0 8px', borderRadius: '2px' }}>📂</button>
@@ -365,8 +337,6 @@ function App() {
                     )}
                 </div>
             </div>
-            {/* {activeTab === 'generate' && <div className="hint" style={{ marginTop: '-10px', marginBottom: '10px', textAlign: 'right' }}>Custom Logo (PNG)</div>} */}
-
 
             <div className="row">
                 <div className="form-group half">
@@ -396,7 +366,6 @@ function App() {
                                     { value: 'modern', label: 'Payslip Modern' },
                                     { value: 'original', label: 'Payslip Original' },
                                     { value: 'simple', label: 'Payslip Simple' }
-                                    // No Portal for Generator
                                 ]
                         }
                         value={formData.docStyle}
@@ -423,7 +392,6 @@ function App() {
                 {isVerifying ? 'RUNNING...' : (activeTab === 'verify' ? 'START VERIFY' : 'GENERATE DOCS')}
             </button>
 
-            {/* Notifications removed as requested */}
 
             <div className="log-window">
                 {logs.length === 0 && <div style={{ textAlign: 'center', marginTop: '20px', opacity: 0.5 }}>No active tasks</div>}
@@ -441,7 +409,6 @@ function App() {
                 &copy; Riiicil 2025 - All rights reserved.
             </div>
 
-            {/* Social Lock Overlay */}
             {showSocialLock && (
                 <div className={`overlay ${isSocialClosing ? 'closing' : ''}`}>
                     <div className="modal">
@@ -485,7 +452,6 @@ function App() {
                 </div>
             )}
 
-            {/* Donation Nagtag */}
             {showDonation && (
                 <div className={`overlay ${isDonationClosing ? 'closing' : ''}`}>
                     <div className="modal">

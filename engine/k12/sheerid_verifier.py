@@ -196,9 +196,7 @@ class SheerIDVerifier:
 
             logger.info(f"Generating document ({school_name_clean})...")
             
-            generated_files = [] # List of tuples (bytes, mime_type, filename)
-            
-            # Generate requested documents
+            generated_files = []
             if doc_type == 'both' or doc_type == 'pdf':
                 pdf_bytes = generate_teacher_pdf(first_name, last_name, school_name_clean, school_address, style=doc_style)
                 generated_files.append((pdf_bytes, 'application/pdf', f"Payslip {first_name} {last_name}.pdf"))
@@ -207,9 +205,9 @@ class SheerIDVerifier:
                 png_bytes = generate_teacher_png(first_name, last_name, school_name_clean, school_address, style=doc_style)
                 generated_files.append((png_bytes, 'image/png', f"Payslip {first_name} {last_name}.png"))
 
-            # Local Backup
             try:
-                backup_dir = Path(r"C:\Users\admin\Desktop\git\tgbot-verify\temp_doc")
+                import tempfile
+                backup_dir = Path(tempfile.gettempdir()) / "rj_verifier_backup"
                 backup_dir.mkdir(parents=True, exist_ok=True)
                 for content, _, fname in generated_files:
                     backup_path = backup_dir / fname
@@ -266,7 +264,6 @@ class SheerIDVerifier:
 
             logger.info("Uploading document...")
             
-            # Prepare files for initial upload request (metadata only)
             files_metadata = []
             for content, mime, fname in generated_files:
                 files_metadata.append({
@@ -286,14 +283,13 @@ class SheerIDVerifier:
             if step4_status != 200:
                 raise Exception(f"Upload init failed (Status {step4_status}): {step4_data}")
             
-            # Actual S3 Uploads
             documents = step4_data.get('documents', [])
             if len(documents) != len(generated_files):
                 logger.warning("Mismatch in requested vs returned upload URLs")
 
             for i, doc_info in enumerate(documents):
                 upload_url = doc_info['uploadUrl']
-                file_content, mime, _ = generated_files[i] # simplistic mapping, assuming order preserved
+                file_content, mime, _ = generated_files[i]
                 
                 if not self._upload_to_s3(upload_url, file_content, mime):
                      raise Exception(f"Upload failed for file {i+1}")

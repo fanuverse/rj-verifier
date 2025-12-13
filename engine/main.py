@@ -29,7 +29,6 @@ def run_verify(args):
     verifier = SheerIDVerifier(args.get('verificationId', ''))
     school_id = args.get('schoolId')
     
-    # Default Backup Path
     backup_path = args.get('savePath')
     if not backup_path:
         backup_path = str(get_default_docs_path('doc_backup verifier'))
@@ -90,7 +89,6 @@ if __name__ == "__main__":
         first_name = data.get('firstName')
         last_name = data.get('lastName')
         
-        # Auto-generate name if empty
         if not first_name or not last_name:
             n = NameGenerator.generate()
             first_name = first_name or n['first_name']
@@ -99,17 +97,15 @@ if __name__ == "__main__":
         school_name = data.get('schoolName') or "Springfield High School"
         address = data.get('address') or "123 Education Lane, Springfield, US 99999" 
         
-        # Logo Logic: User provided > Default SHS.png
         logo_path = data.get('logoPath')
         if not logo_path or not Path(logo_path).exists():
-             logo_path = current_dir / 'assets' / 'SHS.png'
+             logo_path = config.get_assets_dir() / 'SHS.png'
              if not logo_path.exists():
-                 logo_path = None # Fallback to no logo if default missing
+                 logo_path = None
 
         doc_type = data.get('docType', 'pdf')
         doc_style = data.get('docStyle', 'modern')
         
-        # Handle save path
         save_path_str = data.get('savePath')
         if save_path_str:
             save_dir = Path(save_path_str)
@@ -121,7 +117,6 @@ if __name__ == "__main__":
         
         generated_files = []
         try:
-            # Determine files to generate
             if doc_type in ['pdf', 'both']:
                 pdf_bytes = generate_teacher_pdf(first_name, last_name, school_name, address, style=doc_style, logo_path=logo_path)
                 fname = f"Payslip {first_name} {last_name}.pdf"

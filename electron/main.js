@@ -17,7 +17,6 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
         },
         backgroundColor: '#1e1e1e',
-        backgroundColor: '#1e1e1e',
         autoHideMenuBar: true
     });
 
@@ -25,12 +24,10 @@ function createWindow() {
 
     if (process.env.ELECTRON_START_URL) {
         mainWindow.loadURL(startUrl);
-        // mainWindow.webContents.openDevTools(); // Debug Mode OFF
     } else {
         mainWindow.loadURL(startUrl);
     }
 
-    // Open external links in default browser
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
         if (url.startsWith('https:') || url.startsWith('http:')) {
             shell.openExternal(url);
@@ -105,11 +102,9 @@ function runPythonCommand(action, data, resolve, reject) {
     let cmd, args;
 
     if (app.isPackaged) {
-        // Production: Run compiled Nuitka EXE
         cmd = path.join(process.resourcesPath, 'engine/rj_engine.exe');
         args = ['--action', action];
     } else {
-        // Development: Run Python script
         cmd = 'python';
         const scriptPath = path.join(__dirname, '../engine/main.py');
         args = [scriptPath, '--action', action];
@@ -128,7 +123,6 @@ function runPythonCommand(action, data, resolve, reject) {
 
     pyProcess.stdout.on('data', (chunk) => {
         const line = chunk.toString();
-        // Send logs to frontend, but skip get_schools output
         if (mainWindow && action !== 'get_schools') {
             mainWindow.webContents.send('log-update', line);
         }
@@ -148,18 +142,13 @@ function runPythonCommand(action, data, resolve, reject) {
         if (code !== 0) {
             reject(`Process exited with code ${code}: ${errorData}`);
         } else {
-            // ... (rest of parsing logic)
-            // Try to parse the last line as JSON result
             try {
                 const lines = outputData.trim().split('\n');
                 const lastLine = lines[lines.length - 1];
                 const result = JSON.parse(lastLine);
                 resolve(result);
             } catch (e) {
-                // If not JSON, maybe just logs, resolve with empty or error
-                // For generate_docs, we print JSON at end.
                 if (outputData.includes('"success": true')) {
-                    // Find the json line
                     const matches = outputData.match(/\{"success": true.*\}/);
                     if (matches) resolve(JSON.parse(matches[0]));
                     else resolve({ success: true, message: outputData });

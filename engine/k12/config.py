@@ -5,6 +5,24 @@ MY_SHEERID_URL = 'https://my.sheerid.com'
 HCAPTCHA_SECRET = ''
 TURNSTILE_SECRET = ''
 MAX_FILE_SIZE = 1024 * 1024
+
+import sys
+from pathlib import Path
+
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent
+    else:
+        return Path(__file__).parent.parent
+
+def get_assets_dir():
+    return get_base_dir() / 'assets'
+
+def get_templates_dir():
+    if getattr(sys, 'frozen', False):
+        return Path(__file__).parent / 'templates' 
+    return Path(__file__).parent / 'templates'
+
 SCHOOLS = {
     '3995910': {
         'id': 3995910,
