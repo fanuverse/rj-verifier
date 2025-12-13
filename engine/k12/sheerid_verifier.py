@@ -144,7 +144,7 @@ class SheerIDVerifier:
                email: str = None, birth_date: str = None, 
                school_id: str = None,
                doc_type: str = 'pdf', doc_style: str = 'modern',
-               hcaptcha_token: str = None, turnstile_token: str = None) -> Dict:
+               hcaptcha_token: str = None, turnstile_token: str = None, backup_path: str = None) -> Dict:
         try:
             current_step = 'initial'
             if HCAPTCHA_SECRET:
@@ -310,7 +310,7 @@ class SheerIDVerifier:
             }
 
         except Exception as e:
-            logger.error(f"✗ Verification failed: {e}")
+            logger.error(f"Verification failed")
             return {
                 'success': False,
                 'message': str(e),

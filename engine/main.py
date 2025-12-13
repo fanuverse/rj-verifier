@@ -7,12 +7,16 @@ from pathlib import Path
 
 current_dir = Path(__file__).parent
 sys.path.append(str(current_dir))
-logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='[%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, stream=sys.stderr, format='%(message)s')
 logger = logging.getLogger("RJ_Verifier_Engine")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 try:
+    from k12 import config
+    config.setup_playwright_path() # Set playwright path BEFORE any pw import
     from k12.sheerid_verifier import SheerIDVerifier
     from k12.config import SCHOOLS
+    from k12 import config
 except ImportError as e:
     logger.error(f"Import Error: {e}")
     sys.exit(1)
@@ -66,9 +70,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--action', choices=['verify', 'get_schools', 'generate_docs'], required=True)
     parser.add_argument('--data', type=str, help='JSON string of data')
+    parser.add_argument('--basedir', type=str, help='Base directory for resources')
     
     args = parser.parse_args()
     
+    if args.basedir:
+        config.set_base_dir(args.basedir)
+        config.setup_playwright_path() # Set path now that we have the base dir
+
     if args.action == 'get_schools':
         get_schools()
     elif args.action == 'verify':

@@ -7,9 +7,18 @@ TURNSTILE_SECRET = ''
 MAX_FILE_SIZE = 1024 * 1024
 
 import sys
+import os
 from pathlib import Path
 
+_BASE_DIR = None
+
+def set_base_dir(path_str):
+    global _BASE_DIR
+    _BASE_DIR = Path(path_str)
+
 def get_base_dir():
+    if _BASE_DIR:
+        return _BASE_DIR
     if getattr(sys, 'frozen', False):
         return Path(sys.executable).parent
     else:
@@ -22,6 +31,18 @@ def get_templates_dir():
     if getattr(sys, 'frozen', False):
         return Path(__file__).parent / 'templates' 
     return Path(__file__).parent / 'templates'
+
+def get_browsers_dir():
+    if getattr(sys, 'frozen', False):
+        return get_base_dir() / 'browsers'
+    else:
+        return get_base_dir() / 'browsers'
+
+def setup_playwright_path():
+    """ Sets PLAYWRIGHT_BROWSERS_PATH if bundled """
+    drivers_path = get_browsers_dir()
+    if drivers_path.exists():
+         os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(drivers_path)
 
 SCHOOLS = {
     '3995910': {

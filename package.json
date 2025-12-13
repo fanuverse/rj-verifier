@@ -36,7 +36,7 @@
       "icon": "assets/icon1.ico"
     },
     "nsis": {
-      "artifactName": "Setup.exe",
+      "artifactName": "RJ Verifier Setup.exe",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
@@ -48,6 +48,10 @@
       {
         "from": "engine/assets",
         "to": "engine/assets"
+      },
+      {
+        "from": "C:/Users/admin/AppData/Local/ms-playwright/chromium-1140",
+        "to": "engine/browsers/chromium-1140"
       }
     ]
   }

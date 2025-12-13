@@ -103,7 +103,8 @@ function runPythonCommand(action, data, resolve, reject) {
 
     if (app.isPackaged) {
         cmd = path.join(process.resourcesPath, 'engine/rj_engine.exe');
-        args = ['--action', action];
+        const engineDir = path.join(process.resourcesPath, 'engine');
+        args = ['--action', action, '--basedir', engineDir];
     } else {
         cmd = 'python';
         const scriptPath = path.join(__dirname, '../engine/main.py');
@@ -122,20 +123,27 @@ function runPythonCommand(action, data, resolve, reject) {
     let errorData = '';
 
     pyProcess.stdout.on('data', (chunk) => {
-        const line = chunk.toString();
+        const dataStr = chunk.toString();
         if (mainWindow && action !== 'get_schools') {
-            mainWindow.webContents.send('log-update', line);
+            dataStr.split(/\r?\n/).forEach(line => {
+                if (line.trim()) mainWindow.webContents.send('log-update', line);
+            });
         }
-        outputData += line;
+        outputData += dataStr;
     });
 
     pyProcess.stderr.on('data', (chunk) => {
-        const line = chunk.toString();
-        console.error(`Python Log: ${line}`);
+        const dataStr = chunk.toString();
+        // console.error(`Python Log: ${dataStr}`); // Optional: keep console noise down
         if (mainWindow) {
-            mainWindow.webContents.send('log-update', line);
+            dataStr.split(/\r?\n/).forEach(line => {
+                if (line.trim()) {
+                    console.error(`Python Log: ${line}`);
+                    mainWindow.webContents.send('log-update', line);
+                }
+            });
         }
-        errorData += line;
+        errorData += dataStr;
     });
 
     pyProcess.on('close', (code) => {
