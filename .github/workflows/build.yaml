@@ -28,26 +28,37 @@ jobs:
     - name: Install Node dependencies
       run: npm install
 
+    - name: Check available scripts
+      run: |
+        echo "Available npm scripts:"
+        npm run
+
     - name: Install Python dependencies
       run: pip install -r requirements.txt
 
+    - name: Build web assets
+      run: npm run build
+
     - name: Build Electron app
-      run: npm run dist
+      run: npm run electron:build
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: List build output (debug)
       if: always()
       run: |
-        echo "Checking for dist folder..."
-        if (Test-Path dist) {
-          echo "dist folder contents:"
-          Get-ChildItem -Path dist -Recurse | Select-Object FullName
-        } else {
-          echo "dist folder not found"
+        echo "Checking for build output folders..."
+        $folders = @("dist", "release", "out", "build")
+        foreach ($folder in $folders) {
+          if (Test-Path $folder) {
+            echo "`n=== $folder folder contents ==="
+            Get-ChildItem -Path $folder -Recurse -File | Select-Object FullName, Length
+          } else {
+            echo "$folder folder not found"
+          }
         }
-        echo "Root directory contents:"
-        Get-ChildItem -Path . | Select-Object Name
+        echo "`nRoot directory contents:"
+        Get-ChildItem -Path . -Directory | Select-Object Name
 
     - name: Upload artifacts
       if: always()
@@ -58,6 +69,12 @@ jobs:
           dist/**/*.exe
           dist/**/*.msi
           dist/**/*.zip
+          release/**/*.exe
+          release/**/*.msi
+          release/**/*.zip
+          out/**/*.exe
+          out/**/*.msi
+          out/**/*.zip
         retention-days: 30
         if-no-files-found: warn
 
@@ -66,9 +83,15 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          dist/*.exe
-          dist/*.msi
-          dist/*.zip
+          dist/**/*.exe
+          dist/**/*.msi
+          dist/**/*.zip
+          release/**/*.exe
+          release/**/*.msi
+          release/**/*.zip
+          out/**/*.exe
+          out/**/*.msi
+          out/**/*.zip
         draft: false
         prerelease: false
       env:
