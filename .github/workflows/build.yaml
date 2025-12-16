@@ -30,17 +30,16 @@ jobs:
 
     - name: Check available scripts
       run: |
-        echo "Available npm scripts:"
+        echo "Package.json scripts:"
         npm run
+        echo "`nPackage.json content:"
+        Get-Content package.json
 
     - name: Install Python dependencies
       run: pip install -r requirements.txt
 
-    - name: Build web assets
-      run: npm run build
-
     - name: Build Electron app
-      run: npm run electron:build
+      run: npm run dist
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
