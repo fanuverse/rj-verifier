@@ -15,10 +15,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: List directory structure (debug)
+      run: |
+        echo "Root directory:"
+        dir
+        echo "Looking for package.json..."
+        dir package.json /s
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -27,12 +34,15 @@ jobs:
 
     - name: Install Node dependencies
       run: npm install
+      working-directory: ./RJ-Verifier
 
     - name: Install Python dependencies
       run: pip install -r requirements.txt
+      working-directory: ./RJ-Verifier
 
     - name: Build Electron app
       run: npm run dist
+      working-directory: ./RJ-Verifier
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -41,9 +51,9 @@ jobs:
       with:
         name: rj-verifier-windows
         path: |
-          dist/*.exe
-          dist/*.msi
-          dist/*.zip
+          RJ-Verifier/dist/*.exe
+          RJ-Verifier/dist/*.msi
+          RJ-Verifier/dist/*.zip
         retention-days: 30
 
     - name: Create Release (on tag)
@@ -51,9 +61,9 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          dist/*.exe
-          dist/*.msi
-          dist/*.zip
+          RJ-Verifier/dist/*.exe
+          RJ-Verifier/dist/*.msi
+          RJ-Verifier/dist/*.zip
         draft: false
         prerelease: false
       env:
