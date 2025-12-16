@@ -36,15 +36,30 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: List build output (debug)
+      if: always()
+      run: |
+        echo "Checking for dist folder..."
+        if (Test-Path dist) {
+          echo "dist folder contents:"
+          Get-ChildItem -Path dist -Recurse | Select-Object FullName
+        } else {
+          echo "dist folder not found"
+        }
+        echo "Root directory contents:"
+        Get-ChildItem -Path . | Select-Object Name
+
     - name: Upload artifacts
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: rj-verifier-windows
         path: |
-          dist/*.exe
-          dist/*.msi
-          dist/*.zip
+          dist/**/*.exe
+          dist/**/*.msi
+          dist/**/*.zip
         retention-days: 30
+        if-no-files-found: warn
 
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/v')
