@@ -28,69 +28,60 @@ jobs:
     - name: Install Node dependencies
       run: npm install
 
-    - name: Check available scripts
-      run: |
-        echo "Package.json scripts:"
-        npm run
-        echo "`nPackage.json content:"
-        Get-Content package.json
-
     - name: Install Python dependencies
       run: pip install -r requirements.txt
+
+    - name: Install Playwright browsers
+      run: |
+        pip install playwright
+        python -m playwright install chromium
+
+    - name: Compile Python engine
+      run: npm run compile-engine
+
+    - name: Verify engine compilation
+      run: |
+        if (Test-Path "engine/dist/rj_engine.exe") {
+          echo "✓ Python engine compiled successfully"
+          $size = (Get-Item "engine/dist/rj_engine.exe").Length / 1MB
+          echo "Engine size: $([math]::Round($size, 2)) MB"
+        } else {
+          echo "✗ Python engine compilation failed"
+          exit 1
+        }
 
     - name: Build Electron app
       run: npm run dist
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: List build output (debug)
+    - name: List build output
       if: always()
       run: |
-        echo "Checking for build output folders..."
-        $folders = @("dist", "release", "out", "build")
-        foreach ($folder in $folders) {
-          if (Test-Path $folder) {
-            echo "`n=== $folder folder contents ==="
-            Get-ChildItem -Path $folder -Recurse -File | Select-Object FullName, Length
-          } else {
-            echo "$folder folder not found"
-          }
+        echo "=== Build output in dist_electron ==="
+        if (Test-Path "dist_electron") {
+          Get-ChildItem -Path dist_electron -Recurse -File | 
+            Select-Object FullName, @{Name="Size (MB)";Expression={[math]::Round($_.Length/1MB,2)}}
+        } else {
+          echo "dist_electron folder not found"
         }
-        echo "`nRoot directory contents:"
-        Get-ChildItem -Path . -Directory | Select-Object Name
 
     - name: Upload artifacts
-      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: rj-verifier-windows
         path: |
-          dist/**/*.exe
-          dist/**/*.msi
-          dist/**/*.zip
-          release/**/*.exe
-          release/**/*.msi
-          release/**/*.zip
-          out/**/*.exe
-          out/**/*.msi
-          out/**/*.zip
+          dist_electron/*.exe
+          dist_electron/*.msi
         retention-days: 30
-        if-no-files-found: warn
 
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          dist/**/*.exe
-          dist/**/*.msi
-          dist/**/*.zip
-          release/**/*.exe
-          release/**/*.msi
-          release/**/*.zip
-          out/**/*.exe
-          out/**/*.msi
-          out/**/*.zip
+          dist_electron/*.exe
+          dist_electron/*.msi
         draft: false
         prerelease: false
       env:
